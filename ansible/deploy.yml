@@ -1,0 +1,49 @@
+- name: Configure Web Servers
+  hosts: tag_Name_web_*
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Apache, PHP, MySQL client
+      apt:
+        name:
+          - apache2
+          - php
+          - php-mysql
+          - mysql-client
+        state: present
+
+    - name: Enable and start Apache
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Remove default index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Copy PHP app from Jenkins workspace
+      copy:
+        src: "{{ lookup('env','WORKSPACE') }}/app/v1/"
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Copy DB check file
+      copy:
+        src: files/db_check.php
+        dest: /var/www/html/db_check.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
